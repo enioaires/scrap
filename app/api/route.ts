@@ -5,10 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 type latestComments = {
   id: string;
   text: string;
-  ownerUsername: string;
-  ownerProfilePicUrl: string;
   timestamp: string;
-  likesCount: number;
 };
 
 export type Comment = {
@@ -20,10 +17,6 @@ export async function GET(req: NextRequest) {
   try {
     const response = await axios.get<Comment[]>(
       "https://api.apify.com/v2/datasets/Z57eG6FgzeWXJzL33/items?clean=true&fields=latestComments,url&format=json&omit=coauthorProducers,childPosts,musicInfo,taggedUsers,hashtags,dimensionsHeight,ownerFullName,inputUrl,timestamp,images,mentions,videoDuration,type,isSponsored,ownerUsername,productType,alt,shortCode,caption,locationId,videoUrl,videoViewCount,firstComment,locationName,ownerId,isPinned,displayUrl,likesCount,videoPlayCount,commentsCount,id"
-    );
-
-    const commentsText = response.data.flatMap((item) =>
-      item.latestComments.map((comment) => comment.text)
     );
 
     // Palavras-chave associadas a reclamações e críticas
@@ -133,13 +126,36 @@ export async function GET(req: NextRequest) {
       "não apropriado",
     ];
 
-    // Filtrar comentários que contenham qualquer uma das palavras-chave
-    const reclamacoes = commentsText.filter((comment) => {
-      const commentLower = comment.toLowerCase();
-      return keywords.some((keyword) => commentLower.includes(keyword));
-    });
+    // Função para normalizar texto
+    const normalizeText = (text: string) =>
+      text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
 
-    return NextResponse.json(reclamacoes);
+    // Filtrar comentários que contenham qualquer uma das palavras-chave
+    const filteredComments = response.data
+      .map((item) => {
+        const filteredLatestComments = item.latestComments
+          .filter((comment) => {
+            const normalizedComment = normalizeText(comment.text);
+            return keywords.some((keyword) =>
+              normalizedComment.includes(normalizeText(keyword))
+            );
+          })
+          .map((comment) => ({
+            text: comment.text,
+            timestamp: comment.timestamp,
+          }));
+
+        return {
+          url: item.url,
+          latestComments: filteredLatestComments,
+        };
+      })
+      .filter((item) => item.latestComments.length > 0); // Filtrar apenas os itens que possuem comentários após a filtragem
+
+    return NextResponse.json(filteredComments);
   } catch (error: any) {
     return new NextResponse(
       "An error occurred while trying to fetch the operator.",

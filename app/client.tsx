@@ -14,6 +14,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Root } from "./page";
+import { format } from "date-fns";
+import ptBR from "date-fns/locale/pt-BR"; // Importa a localização em português
 
 const formSchema = z.object({
   key: z
@@ -23,11 +26,11 @@ const formSchema = z.object({
 });
 
 type Props = {
-  comments: string[];
+  comments: Root[];
 };
 
 export const Client: FC<Props> = ({ comments }) => {
-  const [filteredComments, setFilteredComments] = useState<string[]>(comments);
+  const [filteredComments, setFilteredComments] = useState<Root[]>(comments);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -36,21 +39,19 @@ export const Client: FC<Props> = ({ comments }) => {
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const { key } = values;
-    const normalizedKey = key
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-
-    const filtered = comments.filter((comment) => {
-      const normalizedComment = comment
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase();
-      return normalizedComment.includes(normalizedKey);
-    });
-
-    setFilteredComments(filtered);
+    // const { key } = values;
+    // const normalizedKey = key
+    //   .normalize("NFD")
+    //   .replace(/[\u0300-\u036f]/g, "")
+    //   .toLowerCase();
+    // const filtered = comments.filter((comment) => {
+    //   const normalizedComment = comment
+    //     .normalize("NFD")
+    //     .replace(/[\u0300-\u036f]/g, "")
+    //     .toLowerCase();
+    //   return normalizedComment.includes(normalizedKey);
+    // });
+    // setFilteredComments(filtered);
   }
   return (
     <div className="flex flex-col justify-center items-center px-96 py-12 gap-8">
@@ -78,10 +79,31 @@ export const Client: FC<Props> = ({ comments }) => {
         </form>
       </Form>
       <ScrollArea>
-        <div className="space-y-2">
+        <div className="flex flex-col gap-4">
           {filteredComments.map((comment) => (
-            <div key={comment} className="p-4 bg-gray-700 rounded-md">
-              {comment}
+            <div
+              key={comment.url}
+              className="flex flex-col gap-2 bg-slate-700 rounded px-2"
+            >
+              <h2 className="text-lg font-semibold cursor-pointer hover:underline text-center pt-2">
+                {comment.url}
+              </h2>
+              <div className="flex flex-col gap-2">
+                {comment.latestComments.map((latestComment) => (
+                  <div
+                    key={latestComment.timestamp}
+                    className="flex flex-col gap-2 bg-slate-800 px-2 py-1 rounded"
+                  >
+                    <p>{latestComment.text}</p>
+                    <span className="self-end">
+                      {format(
+                        new Date(latestComment.timestamp),
+                        "dd/MM/yyyy 'às' HH:mm"
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
