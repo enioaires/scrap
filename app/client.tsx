@@ -1,5 +1,5 @@
 "use client";
-import { FC, useState } from "react";
+import { FC, useCallback, useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Root } from "./page";
 import { format } from "date-fns";
 import ptBR from "date-fns/locale/pt-BR"; // Importa a localização em português
+import { getData } from "@/services/getData";
 
 const formSchema = z.object({
   key: z
@@ -25,12 +26,8 @@ const formSchema = z.object({
     .max(50, "Palavra muito grande"),
 });
 
-type Props = {
-  comments: Root[];
-};
-
-export const Client: FC<Props> = ({ comments }) => {
-  const [filteredComments, setFilteredComments] = useState<Root[]>(comments);
+export const Client: FC = () => {
+  const [filteredComments, setFilteredComments] = useState<Root[]>();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -38,9 +35,24 @@ export const Client: FC<Props> = ({ comments }) => {
     },
   });
 
+  const handleComments = useCallback(async () => {
+    try {
+      const response = await getData();
+      setFilteredComments(response.data);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [setFilteredComments]);
+
+  useEffect(() => {
+    handleComments();
+  }, [handleComments]);
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     const { key } = values;
-    const filtered = comments.filter((comment) =>
+    if (!filteredComments) return;
+
+    const filtered = filteredComments.filter((comment) =>
       comment.latestComments.some((latestComment) =>
         latestComment.text.toLowerCase().includes(key.toLowerCase())
       )
@@ -48,9 +60,11 @@ export const Client: FC<Props> = ({ comments }) => {
     setFilteredComments(filtered);
   }
 
+  if (!filteredComments) return <div>Carregando...</div>;
+
   return (
     <>
-      {filteredComments.length !== 0 && (
+      {filteredComments?.length !== 0 && (
         <div className="flex flex-col justify-center items-center px-96 py-12 gap-8">
           <h1 className="text-3xl font-semibold">Filtro</h1>
           <Form {...form}>
@@ -77,7 +91,7 @@ export const Client: FC<Props> = ({ comments }) => {
           </Form>
           <ScrollArea>
             <div className="flex flex-col gap-4">
-              {filteredComments.map((comment) => (
+              {filteredComments?.map((comment) => (
                 <div
                   key={comment.url}
                   className="flex flex-col gap-2 bg-slate-700 rounded px-2"
