@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Root } from "./page";
 import { format } from "date-fns";
-import ptBR from "date-fns/locale/pt-BR"; // Importa a localização em português
 import { getData } from "@/services/getData";
 
 const formSchema = z.object({
@@ -52,11 +51,15 @@ export const Client: FC = () => {
     const { key } = values;
     if (!filteredComments) return;
 
-    const filtered = filteredComments.filter((comment) =>
-      comment.latestComments.some((latestComment) =>
-        latestComment.text.toLowerCase().includes(key.toLowerCase())
-      )
-    );
+    const filtered = filteredComments
+      .map((comment) => ({
+        ...comment,
+        latestComments: comment.latestComments.filter((latestComment) =>
+          latestComment.text.toLowerCase().includes(key.toLowerCase())
+        ),
+      }))
+      .filter((comment) => comment.latestComments.length > 0);
+
     setFilteredComments(filtered);
   }
 
@@ -94,11 +97,16 @@ export const Client: FC = () => {
               {filteredComments?.map((comment) => (
                 <div
                   key={comment.url}
-                  className="flex flex-col gap-2 bg-slate-700 rounded px-2"
+                  className="flex flex-col gap-2 py-2 bg-slate-700 rounded px-2"
                 >
-                  <h2 className="text-lg font-semibold cursor-pointer hover:underline text-center pt-2">
+                  <a
+                    className="text-lg font-semibold cursor-pointer hover:underline text-center pt-2"
+                    href={comment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     {comment.url}
-                  </h2>
+                  </a>
                   <div className="flex flex-col gap-2">
                     {comment.latestComments.map((latestComment) => (
                       <div
