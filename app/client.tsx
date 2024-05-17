@@ -53,6 +53,8 @@ export const Client: FC<Props> = ({ comments }) => {
     // });
     // setFilteredComments(filtered);
   }
+
+  if (filteredComments.length === 0) return <div>Carregando...</div>;
   return (
     <div className="flex flex-col justify-center items-center px-96 py-12 gap-8">
       <h1 className="text-3xl font-semibold">Filtro</h1>
