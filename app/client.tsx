@@ -5,7 +5,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Form,
   FormControl,
@@ -17,12 +24,11 @@ import { Input } from "@/components/ui/input";
 import { Root } from "./page";
 import { format } from "date-fns";
 import { getData } from "@/services/getData";
+import { CalendarIcon } from "lucide-react";
 
 const formSchema = z.object({
-  key: z
-    .string()
-    .min(2, "Palavra muito pequena")
-    .max(50, "Palavra muito grande"),
+  key: z.string().optional(),
+  day: z.date().optional(),
 });
 
 export const Client: FC = () => {
@@ -48,15 +54,22 @@ export const Client: FC = () => {
   }, [handleComments]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const { key } = values;
+    const { key, day } = values;
     if (!filteredComments) return;
 
     const filtered = filteredComments
       .map((comment) => ({
         ...comment,
-        latestComments: comment.latestComments.filter((latestComment) =>
-          latestComment.text.toLowerCase().includes(key.toLowerCase())
-        ),
+        latestComments: comment.latestComments.filter((latestComment) => {
+          const matchesKey = latestComment.text
+            .toLowerCase()
+            .includes(key?.toLowerCase() || "");
+          const matchesDate = day
+            ? format(new Date(latestComment.timestamp), "yyyy-MM-dd") ===
+              format(day, "yyyy-MM-dd")
+            : true;
+          return matchesKey && matchesDate;
+        }),
       }))
       .filter((comment) => comment.latestComments.length > 0);
 
@@ -83,6 +96,46 @@ export const Client: FC = () => {
                     <FormControl>
                       <Input placeholder="Palavra Chave" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="day"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-[240px] pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Escolha uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -114,7 +167,7 @@ export const Client: FC = () => {
                         className="flex flex-col gap-2 bg-slate-800 px-2 py-1 rounded"
                       >
                         <p>{latestComment.text}</p>
-                        <span className="self-end">
+                        <span className="self-end text-sm text-muted-foreground">
                           {format(
                             new Date(latestComment.timestamp),
                             "dd/MM/yyyy 'às' HH:mm"
