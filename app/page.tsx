@@ -16,17 +16,19 @@ type Comment = {
 };
 
 export default async function Home() {
-  // const comments = await axios.get<string[]>("http://localhost:3000/api");
+  const comments = await axios.get<string[]>(
+    "https://scrap-pearl.vercel.app/api"
+  );
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <ScrollArea>
         <div className="space-y-2">
-          {/* {comments.data.map((comment, index) => (
+          {comments.data.map((comment, index) => (
             <div key={index} className="p-4 bg-gray-700 rounded-md">
               {comment}
             </div>
-          ))} */}
+          ))}
         </div>
       </ScrollArea>
     </main>
