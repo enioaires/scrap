@@ -12,7 +12,9 @@ export interface LatestComment {
 }
 
 export default async function Home() {
-  const comments = await axios.get<Root[]>("http://localhost:3000/api");
+  const comments = await axios.get<Root[]>(
+    "https://scrap-pearl.vercel.app/api"
+  );
 
   return <>{comments.data && <Client comments={comments.data} />}</>;
 }
